@@ -2,9 +2,14 @@ import streamlit as st
 from duckduckgo_search import DDGS
 import requests
 
-# 1. Load your secret key safely from Streamlit Secrets vault
+# 1. Load and automatically repair your API Key configuration
 try:
-    GEMINI_API_KEY = st.secrets["GEMINI_KEY"]
+    raw_key = st.secrets["GEMINI_KEY"]
+    # If the key is missing the required Google prefix, fix it automatically
+    if not raw_key.startswith("AIzaSy"):
+        GEMINI_API_KEY = f"AIzaSy{raw_key}"
+    else:
+        GEMINI_API_KEY = raw_key
 except Exception as vault_error:
     st.error(f"Vault Configuration Error: The server cannot find your key named 'GEMINI_KEY' inside the Streamlit Secrets vault. Details: {vault_error}")
     st.stop()
@@ -39,9 +44,9 @@ def generate_content(query):
     except Exception:
         pass
             
-    # Bulletproof direct web request method to Google's API
+    # Completely separated URL structure to stop connection pool errors
     try:
-        url = f"https://googleapis.com{GEMINI_API_KEY}"
+        url = "https://googleapis.com"
         
         prompt = f"You are an expert blogger. Write a short, highly engaging 250-word informational article about '{query}'. Use these facts if helpful:\n{web_context}\nFormat beautifully with bold headings, short paragraphs, and bullet points. Add a small disclaimer at the bottom stating information was compiled from public data indexes."
         
@@ -51,11 +56,14 @@ def generate_content(query):
             }]
         }
         
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": GEMINI_API_KEY
+        }
+        
         response = requests.post(url, json=payload, headers=headers)
         res_data = response.json()
         
-        # Check if the API returned an explicit error message
         if "error" in res_data:
             return f"Google Server Message: {res_data['error']['message']}"
             
