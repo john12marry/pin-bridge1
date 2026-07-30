@@ -2,13 +2,17 @@ import streamlit as st
 from duckduckgo_search import DDGS
 import google.generativeai as genai
 
-# 1. Securely load your free Gemini API Key from Streamlit Secrets
-GEMINI_API_KEY = st.secrets["GEMINI_KEY"]
-genai.configure(api_key=GEMINI_API_KEY)
+# Try to safely read your key from Streamlit Secrets vault
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_KEY"]
+    genai.configure(api_key=GEMINI_API_KEY)
+except Exception as vault_error:
+    st.error(f"Vault Configuration Error: The server cannot find your key named 'GEMINI_KEY' inside the Streamlit Secrets vault. Details: {vault_error}")
+    st.stop()
 
 st.set_page_config(page_title="Instant Info Guide", layout="centered")
 
-# 2. Get the topic dynamically from the Pinterest URL parameter
+# Get the topic dynamically from the Pinterest URL parameter
 query_params = st.query_params
 topic = query_params.get("topic", "Trending Ideas")
 search_query = topic.replace("-", " ")
@@ -22,12 +26,11 @@ st.components.v1.html("""
     </div>
 """, height=80)
 
-# 3. Fetch information with an automatic fallback mechanism
+# Fetch information with an automatic fallback mechanism
 @st.cache_data(ttl=86400)
 def generate_content(query):
     web_context = ""
     try:
-        # Simulate a real mobile/desktop browser to bypass DuckDuckGo blocks
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         with DDGS(headers=headers) as ddgs:
             results = [r for r in ddgs.text(query, max_results=3)]
@@ -35,10 +38,9 @@ def generate_content(query):
         for r in results:
             web_context += f"Source: {r['title']}\nSnippet: {r['body']}\n\n"
     except Exception:
-        # If the search engine blocks the script, we leave web_context blank
         pass
             
-    # 4. Have Gemini write the article using live facts or its own extensive knowledge base
+    # Try calling Gemini to write the text
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
@@ -53,7 +55,8 @@ def generate_content(query):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return "System busy generating insight. Please refresh the page to view."
+        # Show the exact API failure reason right on screen
+        return f"Gemini API Error: {str(e)}"
 
 # Run the system and show the article
 with st.spinner("Loading original insights..."):
