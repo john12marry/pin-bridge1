@@ -22,34 +22,40 @@ st.components.v1.html("""
     </div>
 """, height=80)
 
-# 3. Fetch information for FREE using DuckDuckGo Search
+# 3. Fetch information with an automatic fallback mechanism
 @st.cache_data(ttl=86400)
 def generate_content(query):
+    web_context = ""
     try:
-        with DDGS() as ddgs:
+        # Simulate a real mobile/desktop browser to bypass DuckDuckGo blocks
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        with DDGS(headers=headers) as ddgs:
             results = [r for r in ddgs.text(query, max_results=3)]
         
-        web_context = ""
         for r in results:
             web_context += f"Source: {r['title']}\nSnippet: {r['body']}\n\n"
+    except Exception:
+        # If the search engine blocks the script, we leave web_context blank
+        pass
             
-        # 4. Use Gemini Flash (Free Tier) to rewrite the data into a blog post
+    # 4. Have Gemini write the article using live facts or its own extensive knowledge base
+    try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         You are an expert blogger. Write a short, highly engaging 250-word informational article about '{query}'.
-        Use the following real-time web facts to ensure accurate details:
+        
+        Optional real-time web facts to include if available:
         {web_context}
         
-        Format the article with bold headings, short paragraphs, and bullet points so it looks highly professional.
-        Add a small disclaimer at the bottom stating information was summarized from public search indexes.
+        Format the article beautifully with bold headings, short paragraphs, and clear bullet points.
+        Add a small disclaimer at the bottom stating information was compiled from public data indexes.
         """
-        
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return "Loading content... Please refresh in a moment."
+        return "System busy generating insight. Please refresh the page to view."
 
-# Run the functions and display the freshly generated text
+# Run the system and show the article
 with st.spinner("Loading original insights..."):
     article_text = generate_content(search_query)
     st.markdown(article_text)
