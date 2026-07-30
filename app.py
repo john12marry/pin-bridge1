@@ -35,7 +35,7 @@ def generate_content(query):
             
     # Bulletproof fail-safe generation system
     try:
-                if len(web_context) > 50:
+        if len(web_context) > 50:
             return f"Welcome! Here are top verified insights and recipes for **{query.title()}** curated directly from live public search indexes:\n\n{web_context}\n\n*Disclaimer: This overview was automatically compiled via public data search indexes to match your requested interest link.*"
 
         # High-reliability open text fallback
