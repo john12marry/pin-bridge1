@@ -1,11 +1,10 @@
 import streamlit as st
 from duckduckgo_search import DDGS
-import google.generativeai as genai
+import requests
 
-# Try to safely read your key from Streamlit Secrets vault
+# 1. Load your secret key safely from Streamlit Secrets vault
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_KEY"]
-    genai.configure(api_key=GEMINI_API_KEY)
 except Exception as vault_error:
     st.error(f"Vault Configuration Error: The server cannot find your key named 'GEMINI_KEY' inside the Streamlit Secrets vault. Details: {vault_error}")
     st.stop()
@@ -40,23 +39,30 @@ def generate_content(query):
     except Exception:
         pass
             
-    # Try calling Gemini to write the text
+    # Bulletproof direct web request method to Google's API
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"""
-        You are an expert blogger. Write a short, highly engaging 250-word informational article about '{query}'.
+        url = f"https://googleapis.com{GEMINI_API_KEY}"
         
-        Optional real-time web facts to include if available:
-        {web_context}
+        prompt = f"You are an expert blogger. Write a short, highly engaging 250-word informational article about '{query}'. Use these facts if helpful:\n{web_context}\nFormat beautifully with bold headings, short paragraphs, and bullet points. Add a small disclaimer at the bottom stating information was compiled from public data indexes."
         
-        Format the article beautifully with bold headings, short paragraphs, and clear bullet points.
-        Add a small disclaimer at the bottom stating information was compiled from public data indexes.
-        """
-        response = model.generate_content(prompt)
-        return response.text
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(url, json=payload, headers=headers)
+        res_data = response.json()
+        
+        # Check if the API returned an explicit error message
+        if "error" in res_data:
+            return f"Google Server Message: {res_data['error']['message']}"
+            
+        return res_data["candidates"][0]["content"]["parts"][0]["text"]
+        
     except Exception as e:
-        # Show the exact API failure reason right on screen
-        return f"Gemini API Error: {str(e)}"
+        return f"System processing error: {str(e)}"
 
 # Run the system and show the article
 with st.spinner("Loading original insights..."):
