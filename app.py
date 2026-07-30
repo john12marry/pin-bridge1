@@ -1,4 +1,4 @@
-import import streamlit as st
+import streamlit as st
 from duckduckgo_search import DDGS
 import google.generativeai as genai
 
