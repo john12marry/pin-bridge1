@@ -12,12 +12,16 @@ search_query = topic.replace("-", " ")
 
 st.title(f"Everything You Need To Know About: {search_query.title()}")
 
-# ==========================================
-# PLACEHOLDER FOR YOUR FREE ADSENSE CODE (TOP AD)
-# ==========================================
+# =============================================================
+# MONETAG VERIFICATION & TOP AD CONTAINER
+# =============================================================
 st.components.v1.html("""
+    <!-- Monetag Verification Meta Tag -->
+    <meta name="monetag" content="127919dbb8cd9e3e529f1ff32f04eb12">
+    
+    <!-- Top Ad Placeholder Layout -->
     <div style="background-color: #f0f0f0; padding: 15px; text-align: center; border: 1px dashed #ccc; font-family: sans-serif; font-size: 14px; color: #666;">
-        [Sponsored Advertisement Slot]
+        [Monetag Ad Integration Active]
     </div>
 """, height=80)
 
@@ -66,9 +70,9 @@ with st.spinner("Loading original insights..."):
     st.markdown(article_text)
 
 
-# ==========================================
-# PLACEHOLDER FOR YOUR FREE ADSENSE CODE (BOTTOM AD)
-# ==========================================
+# =============================================================
+# BOTTOM AD CONTAINER
+# =============================================================
 st.components.v1.html("""
     <div style="background-color: #f0f0f0; padding: 20px; text-align: center; border: 1px dashed #ccc; margin-top: 30px; font-family: sans-serif; font-size: 14px; color: #666;">
         [Sponsored Advertisement Slot]
